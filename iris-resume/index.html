@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Iris Chu — Resume</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:ital,wght@0,400;0,600;0,700;1,400&family=Lato:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Nunito:ital,wght@0,400;0,600;0,700;1,400&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Oswald:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Poppins:ital,wght@0,400;0,600;0,700;1,400&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Raleway:ital,wght@0,400;0,600;0,700;1,400&family=Roboto:ital,wght@0,400;0,700;1,400&family=Roboto+Slab:wght@400;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Work+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="toolbar no-print">
+    <div class="toolbar-row toolbar-row-main">
+      <span class="toolbar-hint">Hi dear :) ✏️ Click text to edit · select text or use Select all, then format</span>
+      <button id="undoBtn" class="toolbar-btn ghost" title="Revert (⌘Z)" disabled>↺ Revert</button>
+      <button id="redoBtn" class="toolbar-btn ghost" title="Reapply (⌘⇧Z)" disabled>↻ Reapply</button>
+      <button id="downloadBtn" class="toolbar-btn">⬇ Download as PDF</button>
+    </div>
+    <div class="toolbar-row toolbar-row-format">
+      <div class="format-bar" aria-label="Text formatting">
+        <button type="button" class="fmt-btn" id="fmtBold" title="Bold" aria-label="Bold"><b>B</b></button>
+        <button type="button" class="fmt-btn" id="fmtItalic" title="Italic" aria-label="Italic"><i>I</i></button>
+        <button type="button" class="fmt-btn" id="fmtUnderline" title="Underline" aria-label="Underline"><u>U</u></button>
+        <span class="fmt-sep" aria-hidden="true"></span>
+        <label class="fmt-label" for="fmtFont">Font</label>
+        <select id="fmtFont" class="fmt-select" title="Font family">
+          <option value="EB Garamond, Georgia, serif">EB Garamond</option>
+          <option value="Lora, Georgia, serif">Lora</option>
+          <option value="'Source Serif 4', Georgia, serif">Source Serif</option>
+          <option value="'Libre Baskerville', Georgia, serif">Libre Baskerville</option>
+          <option value="Merriweather, Georgia, serif">Merriweather</option>
+          <option value="'PT Serif', Georgia, serif">PT Serif</option>
+          <option value="'Cormorant Garamond', Georgia, serif">Cormorant Garamond</option>
+          <option value="'Playfair Display', Georgia, serif">Playfair Display</option>
+          <option value="'Roboto Slab', Georgia, serif">Roboto Slab</option>
+          <option value="Georgia, 'Times New Roman', serif">Georgia</option>
+          <option value="'Times New Roman', Times, serif">Times New Roman</option>
+          <option value="Inter, Helvetica, sans-serif">Inter</option>
+          <option value="Roboto, Helvetica, sans-serif">Roboto</option>
+          <option value="'Open Sans', Helvetica, sans-serif">Open Sans</option>
+          <option value="Lato, Helvetica, sans-serif">Lato</option>
+          <option value="Montserrat, Helvetica, sans-serif">Montserrat</option>
+          <option value="Poppins, Helvetica, sans-serif">Poppins</option>
+          <option value="Nunito, Helvetica, sans-serif">Nunito</option>
+          <option value="'Source Sans 3', Helvetica, sans-serif">Source Sans</option>
+          <option value="Raleway, Helvetica, sans-serif">Raleway</option>
+          <option value="'Work Sans', Helvetica, sans-serif">Work Sans</option>
+          <option value="'Noto Sans', Helvetica, sans-serif">Noto Sans</option>
+          <option value="Oswald, Helvetica, sans-serif">Oswald</option>
+          <option value="Arial, Helvetica, sans-serif">Arial</option>
+          <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+          <option value="Verdana, Geneva, sans-serif">Verdana</option>
+          <option value="'Courier New', Courier, monospace">Courier New</option>
+        </select>
+        <label class="fmt-label" for="fmtSize">Size</label>
+        <select id="fmtSize" class="fmt-select fmt-select-sm" title="Font size">
+          <option value="">Default</option>
+          <option value="10px">10</option>
+          <option value="11px">11</option>
+          <option value="12px">12</option>
+          <option value="13px">13</option>
+          <option value="14px">14</option>
+          <option value="16px">16</option>
+          <option value="18px">18</option>
+          <option value="20px">20</option>
+          <option value="24px">24</option>
+          <option value="28px">28</option>
+        </select>
+        <label class="fmt-label">Line</label>
+        <div class="fmt-stepper" title="Line height (spacing between lines)">
+          <button type="button" class="fmt-btn" id="fmtLineDown" aria-label="Decrease line height">−</button>
+          <span id="fmtLineValue" class="fmt-stepper-value">1.45</span>
+          <button type="button" class="fmt-btn" id="fmtLineUp" aria-label="Increase line height">+</button>
+        </div>
+        <button type="button" class="fmt-btn fmt-select-all" id="fmtSelectAll" title="Select all text on the page">Select all</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="page" id="resume">
+
+    <!-- ===== HEADER ===== -->
+    <header class="header">
+      <h1>
+        <span contenteditable="true" data-edit-id="name">Iris Chu</span>
+        <span class="pronouns" contenteditable="true" data-edit-id="pronouns">(she/they)</span>
+      </h1>
+      <p class="tagline" contenteditable="true" data-edit-id="tagline">Communications Specialist</p>
+    </header>
+
+    <hr class="rule" />
+
+    <!-- ===== PROFILE ===== -->
+    <section class="row">
+      <div class="label" contenteditable="true" data-edit-id="h-profile">Profile</div>
+      <div class="content">
+        <p contenteditable="true" data-edit-id="profile-text">Communication specialist with 8 years of experience in multimedia content development. Proven ability in building engagement through community focused communication and design strategies, resulting in long term, high quality retention. Skilled in fostering interpersonal collaboration across teams to achieve organization objectives while delivering compelling visual and written content that resonates with diverse audiences.</p>
+      </div>
+    </section>
+
+    <hr class="rule" />
+
+    <!-- ===== EMPLOYMENT HISTORY ===== -->
+    <section class="section">
+      <h2 class="section-title" contenteditable="true" data-edit-id="h-employment">Employment History</h2>
+
+      <div class="entry">
+        <div class="entry-date" contenteditable="true" data-edit-id="job1-date">Aug 2022 — Apr 2025</div>
+        <div class="entry-content">
+          <div class="entry-head">
+            <h3 contenteditable="true" data-edit-id="job1-title">Public Affairs and Communication Specialist, College of Arts and Letters at Cal State LA</h3>
+            <span class="entry-loc" contenteditable="true" data-edit-id="job1-loc">Los Angeles</span>
+          </div>
+          <ul class="bullets" data-edit-id="job1-bullets" data-editable-list="true">
+            <li>Built and led the Arts and Letters Multimedia Team of exceptional students focused on professional development and in the fields of graphic design, video production, and journalism. Mentored and advocated for students as they assisted in content development across social platforms, web content, and marketing collateral.</li>
+            <li>Stewarded developmental ownership of communication initiatives and public affairs partnerships across the College of Arts and Letters, including it's twelve departments, effectively growing digital audiences by 685.4%.</li>
+            <li>Maintained and collaborated with local and regional partners such as the LA Times, Hauser &amp; Wurth, The Prison Graduation Initiative, Words Uncaged, Paramount, Disney (Blood In Blood Out), etc. to provide enriching community focused opportunities for students and community members alike.</li>
+          </ul>
+          <button class="add-bullet no-print" data-target="job1-bullets">+ Add bullet</button>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div class="entry-date" contenteditable="true" data-edit-id="job2-date">Jan 2021 — Feb 2022</div>
+        <div class="entry-content">
+          <div class="entry-head">
+            <h3 contenteditable="true" data-edit-id="job2-title">Multimedia Content Developer, Lightia</h3>
+            <span class="entry-loc" contenteditable="true" data-edit-id="job2-loc">Los Angeles - Berlin</span>
+          </div>
+          <ul class="bullets" data-edit-id="job2-bullets" data-editable-list="true">
+            <li>Produced and managed consistently compelling copy and graphic design assets for web and social media, resulting in a 30% increase in organic viewership.</li>
+            <li>Maximized monthly marketing goals by carefully combining communication strategies, business development objectives, and creative direction to increase sales targets and customer retention.</li>
+          </ul>
+          <button class="add-bullet no-print" data-target="job2-bullets">+ Add bullet</button>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div class="entry-date" contenteditable="true" data-edit-id="job3-date">Aug 2019 — Mar 2020</div>
+        <div class="entry-content">
+          <div class="entry-head">
+            <h3 contenteditable="true" data-edit-id="job3-title">Growth Marketing Manager, Chattyco GmbH</h3>
+            <span class="entry-loc" contenteditable="true" data-edit-id="job3-loc">Berlin</span>
+          </div>
+          <ul class="bullets" data-edit-id="job3-bullets" data-editable-list="true">
+            <li>Increased user acquisition by 400% through strategic market research, A/B testing, and focus grouping to curate adjacent marketing campaigns across social channels.</li>
+            <li>Implemented go-to-end strategy using CRM tools and KPI monitoring to maximize lead generation, delivering higher engagement of target demographics.</li>
+            <li>Collaborated cross-departmentally with design and product teams to streamline app usability, brand messaging, business development goals, and inspire happiness in our workplace.</li>
+          </ul>
+          <button class="add-bullet no-print" data-target="job3-bullets">+ Add bullet</button>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div class="entry-date" contenteditable="true" data-edit-id="job4-date">Sep 2017 — Aug 2022</div>
+        <div class="entry-content">
+          <div class="entry-head">
+            <h3 contenteditable="true" data-edit-id="job4-title">Contributing Writer and PR Development, Blurred Culture</h3>
+            <span class="entry-loc" contenteditable="true" data-edit-id="job4-loc">Los Angeles</span>
+          </div>
+          <ul class="bullets" data-edit-id="job4-bullets" data-editable-list="true">
+            <li>Liaised and covered AAPI artists and cultural events with interviews, articles, and photography including BTS, Jay Park and H1ghr Music Records, Run River North, Identity LA, etc.</li>
+            <li>Occasionally filled in for other beats such as techno and indie folk rock.</li>
+          </ul>
+          <button class="add-bullet no-print" data-target="job4-bullets">+ Add bullet</button>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule" />
+
+    <!-- ===== EDUCATION ===== -->
+    <section class="section">
+      <h2 class="section-title" contenteditable="true" data-edit-id="h-education">Education</h2>
+
+      <div class="entry">
+        <div class="entry-date" contenteditable="true" data-edit-id="edu1-date">Jan 2014 — Dec 2018</div>
+        <div class="entry-content">
+          <div class="entry-head">
+            <h3 contenteditable="true" data-edit-id="edu1-title">B.A. Communications; Public Relations, Cal State Fullerton</h3>
+            <span class="entry-loc" contenteditable="true" data-edit-id="edu1-loc">Fullerton</span>
+          </div>
+          <ul class="bullets" data-edit-id="edu1-bullets" data-editable-list="true">
+            <li>Speech and Debate; National Forensics Association</li>
+            <li>1st place Speaker, NFA Championship finalist.</li>
+          </ul>
+          <button class="add-bullet no-print" data-target="edu1-bullets">+ Add bullet</button>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div class="entry-date" contenteditable="true" data-edit-id="edu2-date">Aug 2024</div>
+        <div class="entry-content">
+          <div class="entry-head">
+            <h3 contenteditable="true" data-edit-id="edu2-title">Ethnic Studies Pedagogy, Cal State LA</h3>
+            <span class="entry-loc placeholder" contenteditable="true" data-edit-id="edu2-loc">&nbsp;</span>
+          </div>
+          <p class="entry-text" contenteditable="true" data-edit-id="edu2-text">Special interest in Asian American Studies</p>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule" />
+
+    <!-- ===== SKILLS ===== -->
+    <section class="row">
+      <div class="label" contenteditable="true" data-edit-id="h-skills">Skills</div>
+      <div class="content skills-grid">
+        <div contenteditable="true" data-edit-id="skill-1">Community Organizing</div>
+        <div contenteditable="true" data-edit-id="skill-3">Interpersonal Relations</div>
+        <div contenteditable="true" data-edit-id="skill-2">Adobe Suite</div>
+        <div contenteditable="true" data-edit-id="skill-4">Multilinguist</div>
+      </div>
+    </section>
+
+    <footer class="footer-contact">
+      <p class="contact-line">
+        <span contenteditable="true" data-edit-id="location">Los Angeles</span>,
+        <span contenteditable="true" data-edit-id="email">irisgchu@gmail.com</span>
+      </p>
+    </footer>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

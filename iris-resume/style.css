@@ -1,0 +1,551 @@
+/* ===========================================================
+   Iris Chu — Resume site
+   Classic serif "label column" resume layout
+   =========================================================== */
+
+:root {
+  --ink: #1a1a1a;
+  --text: #222222;
+  --text-soft: #4a4a4a;
+  --rule: #1a1a1a;
+  --placeholder: #b23b3b;
+  --border-soft: #d8d3ca;
+  --paper: #ffffff;
+  --paper-2: #f3f2ef;
+
+  --font-serif: 'EB Garamond', 'Georgia', 'Times New Roman', serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper-2);
+  font-family: var(--font-serif);
+  color: var(--text);
+}
+
+/* ---------- Toolbar ---------- */
+
+.toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border-soft);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.toolbar-row-main {
+  justify-content: flex-end;
+}
+
+.toolbar-row-format {
+  justify-content: flex-start;
+}
+
+.toolbar-hint {
+  margin-right: auto;
+  font-size: 12px;
+  color: var(--text-soft);
+  min-width: 0;
+}
+
+.format-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.fmt-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  font-family: Georgia, serif;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s ease;
+}
+
+.fmt-btn:hover,
+.fmt-btn.active {
+  background: var(--paper-2);
+}
+
+.fmt-btn.fmt-select-all {
+  width: auto;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.fmt-btn.fmt-select-all.active {
+  background: var(--ink);
+  color: #fff;
+}
+
+.fmt-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border-soft);
+  margin: 0 4px;
+}
+
+.fmt-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-soft);
+  margin-left: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fmt-select {
+  height: 28px;
+  max-width: 140px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.fmt-select-sm {
+  max-width: 72px;
+}
+
+.fmt-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.fmt-stepper-value {
+  min-width: 36px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  user-select: none;
+}
+
+.toolbar-btn {
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+
+.toolbar-btn:hover {
+  background: #333;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.22);
+}
+
+.toolbar-btn:active {
+  transform: translateY(0);
+}
+
+.toolbar-btn.ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  box-shadow: none;
+}
+
+.toolbar-btn.ghost:hover {
+  background: var(--paper-2);
+  box-shadow: none;
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.toolbar-btn:disabled:hover {
+  background: transparent;
+  transform: none;
+}
+
+/* ---------- Page / paper container ---------- */
+
+.page {
+  position: relative;
+  max-width: 720px;
+  margin: 128px auto 48px;
+  background: var(--paper);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border-soft);
+  overflow: hidden;
+  padding: 44px 56px 40px;
+  --size-scale: 1;
+  --line-height: 1.45;
+}
+
+/* Print layout applied on screen while measuring the fit-to-page scale */
+.print-fit .no-print {
+  display: none !important;
+}
+
+.print-fit .page {
+  margin: 0;
+  border: none;
+  box-shadow: none;
+  max-width: none;
+}
+
+/* ---------- Header ---------- */
+
+.header {
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.header h1 {
+  margin: 0 0 4px;
+  font-size: calc(26px * var(--size-scale));
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+
+.pronouns {
+  font-weight: 400;
+  font-style: italic;
+  font-size: calc(20px * var(--size-scale));
+  color: var(--text-soft);
+}
+
+.tagline {
+  margin: 0 0 6px;
+  font-size: calc(14px * var(--size-scale));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.footer-contact {
+  margin-top: 22px;
+  padding-top: 12px;
+  border-top: none;
+  box-shadow: inset 0 1.5px 0 0 var(--rule);
+  text-align: center;
+}
+
+.contact-line {
+  margin: 0;
+  font-size: calc(12px * var(--size-scale));
+  color: var(--text-soft);
+}
+
+/* ---------- Rules ---------- */
+
+/* Use a filled bar (not border-top): 1px borders become uneven hairlines
+   under print zoom / PDF rasterization, especially the first rule. */
+.rule {
+  display: block;
+  border: none;
+  margin: 14px 0;
+  padding: 0;
+  height: 1.5px;
+  background-color: var(--ink);
+  color: transparent;
+  overflow: hidden;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ---------- Two-column "label" rows (Profile / Skills) ---------- */
+
+.row {
+  display: grid;
+  grid-template-columns: 118px 1fr;
+  column-gap: 22px;
+}
+
+.label {
+  font-size: calc(11px * var(--size-scale));
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+  padding-top: 1px;
+}
+
+.content p {
+  margin: 0;
+  font-size: calc(13px * var(--size-scale));
+  line-height: var(--line-height);
+  color: var(--text);
+  text-align: justify;
+}
+
+/* ---------- Section titles (Employment History / Education) ---------- */
+
+.section-title {
+  font-size: calc(11px * var(--size-scale));
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 0 0 12px;
+}
+
+/* ---------- Entries (jobs / education) ---------- */
+
+.entry {
+  display: grid;
+  grid-template-columns: 118px 1fr;
+  column-gap: 22px;
+  margin-top: 14px;
+}
+
+.entry:first-of-type {
+  margin-top: 0;
+}
+
+.entry-date {
+  font-size: calc(12px * var(--size-scale));
+  color: var(--text-soft);
+  padding-top: 1px;
+}
+
+.entry-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.entry-head h3 {
+  margin: 0;
+  font-size: calc(14.5px * var(--size-scale));
+  font-weight: 700;
+  color: var(--ink);
+  line-height: calc(var(--line-height) * 0.9);
+  flex: 1;
+}
+
+.entry-loc {
+  font-size: calc(12px * var(--size-scale));
+  color: var(--text-soft);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.entry-text {
+  margin: 3px 0 0;
+  font-size: calc(12.5px * var(--size-scale));
+  color: var(--text-soft);
+  line-height: var(--line-height);
+}
+
+.bullets {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  font-size: calc(12.5px * var(--size-scale));
+  line-height: var(--line-height);
+  color: var(--text);
+  list-style: disc;
+}
+
+.bullets li {
+  margin-bottom: 2px;
+}
+
+.bullets li::marker {
+  font-size: 10px;
+}
+
+/* ---------- Skills grid ---------- */
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+  font-size: calc(13px * var(--size-scale));
+  color: var(--text);
+}
+
+/* ---------- Placeholders ---------- */
+
+.placeholder {
+  color: var(--placeholder);
+  font-style: normal;
+}
+
+/* ---------- Inline editing ---------- */
+
+[contenteditable="true"] {
+  border-radius: 3px;
+  transition: background-color 0.12s ease, outline-color 0.12s ease;
+}
+
+[contenteditable="true"]:hover {
+  outline: 1.5px dashed rgba(0, 0, 0, 0.35);
+  outline-offset: 2px;
+  cursor: text;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[contenteditable="true"]:focus {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  background: rgba(0, 0, 0, 0.07);
+}
+
+.bullets li[contenteditable="true"]:hover,
+.bullets li[contenteditable="true"]:focus {
+  outline-offset: 1px;
+}
+
+.del-bullet {
+  display: inline-block;
+  margin-left: 8px;
+  width: 18px;
+  height: 18px;
+  line-height: 16px;
+  text-align: center;
+  border-radius: 50%;
+  background: var(--placeholder);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  user-select: none;
+  vertical-align: middle;
+}
+
+.bullets li:hover .del-bullet {
+  opacity: 1;
+}
+
+.del-bullet:hover {
+  transform: scale(1.15);
+}
+
+.add-bullet {
+  margin-top: 5px;
+  margin-left: 16px;
+  background: transparent;
+  border: 1.5px dashed var(--ink);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 4px 13px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.add-bullet:hover {
+  background: var(--paper-2);
+}
+
+/* ===========================================================
+   PRINT / PDF — must look exactly like the on-screen page
+   =========================================================== */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html, body {
+    background: #fff;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .page {
+    margin: 0;
+    box-shadow: none;
+    border: none;
+    max-width: none;
+    width: 210mm;
+    min-height: 297mm;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  [contenteditable="true"] {
+    outline: none !important;
+    background: transparent !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .row,
+  .entry {
+    grid-template-columns: 1fr;
+    row-gap: 4px;
+  }
+
+  .content p {
+    text-align: left;
+  }
+
+  .entry {
+    margin-top: 18px;
+  }
+
+  .skills-grid {
+    grid-template-columns: 1fr;
+  }
+}
