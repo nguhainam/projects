@@ -1,95 +1,194 @@
 // ===========================================================
-// Inline editing + autosave (localStorage) + PDF export
-// + text formatting toolbar + undo / redo history
+// Multi-resume editor: picker, duplicate, per-resume undo/redo,
+// formatting toolbar, PDF fit-to-page
 // ===========================================================
 
-const STORAGE_KEY = 'irisResumeEditsV1';
-const PAGE_STYLE_KEY = 'irisResumePageStyleV1';
+const DOCS_KEY = 'irisResumeDocsV3';
+const DOCS_KEY_V2 = 'irisResumeDocsV2';
+const LEGACY_STORE_KEY = 'irisResumeEditsV1';
+const LEGACY_STYLE_KEY = 'irisResumePageStyleV1';
 const HISTORY_LIMIT = 80;
 
-function loadStore() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-  } catch (e) {
-    return {};
-  }
-}
+const LINE_HEIGHT_DEFAULT = 1.45;
+const LINE_HEIGHT_STEP = 0.05;
+const LINE_HEIGHT_MIN = 1.0;
+const LINE_HEIGHT_MAX = 2.5;
 
-function persistElement(el) {
-  if (!el || !el.dataset || !el.dataset.editId) return;
-  const store = loadStore();
-  store[el.dataset.editId] = el.outerHTML;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-}
+/** @type {DocsState} */
+let docsState = null;
+/** In-memory undo stacks keyed by document id */
+const historyById = {};
+let historySuspended = false;
+let historyDebounceTimer = null;
+let persistTimer = null;
+let lineHeightState = LINE_HEIGHT_DEFAULT;
+let applyToWholePage = false;
+let savedSelection = null;
+let defaultResumeHtml = '';
+let defaultCoverHtml = '';
 
-function persistAllEditable() {
-  document.querySelectorAll('#resume [data-edit-id]').forEach(persistElement);
-}
+/**
+ * @typedef {{ id: string, name: string, type: 'resume'|'cover', html: string, pageStyle: object }} Doc
+ * @typedef {{
+ *   mode: 'resume'|'cover',
+ *   activeByMode: { resume: string, cover: string|null },
+ *   order: { resume: string[], cover: string[] },
+ *   docs: Record<string, Doc>
+ * }} DocsState
+ */
 
-function restoreAll() {
-  const store = loadStore();
-  Object.keys(store).forEach((id) => {
-    const el = document.querySelector(`[data-edit-id="${cssEscape(id)}"]`);
-    if (!el) return;
-    // Parse the tag and its content separately: parsing outerHTML as a whole
-    // cuts a <p> short at the first <div> the browser inserts on Enter.
-    const match = store[id].match(/^(<[^>]+>)([\s\S]*)<\/[\w-]+>\s*$/);
-    if (!match) return;
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = match[1];
-    const restored = wrapper.firstElementChild;
-    if (!restored) return;
-    restored.innerHTML = match[2];
-    el.replaceWith(restored);
-  });
+function uid(prefix = 'd') {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function cssEscape(str) {
   return window.CSS && CSS.escape ? CSS.escape(str) : str.replace(/([^\w-])/g, '\\$1');
 }
 
-// ---------- Undo / redo history ----------
+function loadDocsRaw() {
+  try {
+    return JSON.parse(localStorage.getItem(DOCS_KEY));
+  } catch (e) {
+    return null;
+  }
+}
 
-const historyStack = [];
-let historyIndex = -1;
-let historySuspended = false;
-let historyDebounceTimer = null;
+function saveDocs() {
+  localStorage.setItem(DOCS_KEY, JSON.stringify(docsState));
+}
+
+function getActiveId() {
+  return docsState.activeByMode[docsState.mode];
+}
+
+function getActiveDoc() {
+  const id = getActiveId();
+  return id ? docsState.docs[id] : null;
+}
+
+function getModeOrder() {
+  return docsState.order[docsState.mode] || [];
+}
+
+function modeLabel(mode = docsState.mode) {
+  return mode === 'cover' ? 'Cover Letter' : 'Resume';
+}
+
+function readPageStyleFromDom() {
+  const page = document.getElementById('resume');
+  const style = {};
+  if (page.style.fontFamily) style.fontFamily = page.style.fontFamily;
+  const scale = page.style.getPropertyValue('--size-scale').trim();
+  if (scale) {
+    style.sizeScale = Number(scale);
+    style.fontSize = `${Math.round(Number(scale) * 13)}px`;
+  }
+  const lh = page.style.getPropertyValue('--line-height').trim();
+  if (lh) style.lineHeight = Number(lh);
+  return style;
+}
+
+function applyPageStyle(style) {
+  const page = document.getElementById('resume');
+  style = style || {};
+  if (style.fontFamily) page.style.fontFamily = style.fontFamily;
+  else page.style.fontFamily = '';
+  if (style.sizeScale) page.style.setProperty('--size-scale', String(style.sizeScale));
+  else page.style.removeProperty('--size-scale');
+  if (style.lineHeight) page.style.setProperty('--line-height', String(style.lineHeight));
+  else page.style.removeProperty('--line-height');
+  syncLineHeightDisplay(style.lineHeight || LINE_HEIGHT_DEFAULT);
+
+  const fontSelect = document.getElementById('fmtFont');
+  const sizeSelect = document.getElementById('fmtSize');
+  if (fontSelect) {
+    const match = Array.from(fontSelect.options).find((o) => o.value === style.fontFamily);
+    fontSelect.value = match ? style.fontFamily : fontSelect.options[0].value;
+  }
+  if (sizeSelect) sizeSelect.value = style.fontSize || '';
+}
+
+function saveActiveFromDom() {
+  if (!docsState || historySuspended) return;
+  const doc = getActiveDoc();
+  if (!doc) return;
+  doc.html = document.getElementById('resume').innerHTML;
+  doc.pageStyle = readPageStyleFromDom();
+  saveDocs();
+}
+
+function schedulePersistActive() {
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(saveActiveFromDom, 200);
+}
+
+// Kept for call sites that still pass an element
+function persistElement() {
+  schedulePersistActive();
+}
+
+function persistAllEditable() {
+  saveActiveFromDom();
+}
+
+function loadPageStyle() {
+  const doc = getActiveDoc();
+  return (doc && doc.pageStyle) ? { ...doc.pageStyle } : {};
+}
+
+function savePageStyle(style) {
+  const doc = getActiveDoc();
+  if (!doc) return;
+  doc.pageStyle = style;
+  applyPageStyle(style);
+  saveDocs();
+}
+
+// ---------- History (per active resume) ----------
+
+function getHistory() {
+  const id = getActiveId();
+  if (!id) return { stack: [], index: -1 };
+  if (!historyById[id]) {
+    historyById[id] = { stack: [], index: -1 };
+  }
+  return historyById[id];
+}
 
 function captureSnapshot() {
-  const page = document.getElementById('resume');
   return {
-    html: page.innerHTML,
-    pageStyle: loadPageStyle(),
-    store: loadStore(),
+    html: document.getElementById('resume').innerHTML,
+    pageStyle: readPageStyleFromDom(),
   };
 }
 
 function updateHistoryButtons() {
+  const hist = getHistory();
   const undoBtn = document.getElementById('undoBtn');
   const redoBtn = document.getElementById('redoBtn');
   if (!undoBtn || !redoBtn) return;
-  undoBtn.disabled = historyIndex <= 0;
-  redoBtn.disabled = historyIndex < 0 || historyIndex >= historyStack.length - 1;
+  undoBtn.disabled = hist.index <= 0;
+  redoBtn.disabled = hist.index < 0 || hist.index >= hist.stack.length - 1;
 }
 
 function pushHistory() {
   if (historySuspended) return;
   const snap = captureSnapshot();
-  // Drop any redo branch
-  historyStack.splice(historyIndex + 1);
-  const last = historyStack[historyStack.length - 1];
+  const hist = getHistory();
+  hist.stack.splice(hist.index + 1);
+  const last = hist.stack[hist.stack.length - 1];
   if (
     last &&
     last.html === snap.html &&
     JSON.stringify(last.pageStyle) === JSON.stringify(snap.pageStyle)
   ) {
+    updateHistoryButtons();
     return;
   }
-  historyStack.push(snap);
-  if (historyStack.length > HISTORY_LIMIT) {
-    historyStack.shift();
-  }
-  historyIndex = historyStack.length - 1;
+  hist.stack.push(snap);
+  if (hist.stack.length > HISTORY_LIMIT) hist.stack.shift();
+  hist.index = hist.stack.length - 1;
+  saveActiveFromDom();
   updateHistoryButtons();
 }
 
@@ -102,19 +201,13 @@ function applySnapshot(snap) {
   historySuspended = true;
   const page = document.getElementById('resume');
   page.innerHTML = snap.html;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(snap.store || {}));
-  savePageStyle(snap.pageStyle || {});
   applyPageStyle(snap.pageStyle || {});
-
-  const fontSelect = document.getElementById('fmtFont');
-  const sizeSelect = document.getElementById('fmtSize');
-  if (fontSelect) {
-    fontSelect.value = (snap.pageStyle && snap.pageStyle.fontFamily) || fontSelect.options[0].value;
+  const doc = getActiveDoc();
+  if (doc) {
+    doc.html = snap.html;
+    doc.pageStyle = snap.pageStyle || {};
+    saveDocs();
   }
-  if (sizeSelect) {
-    sizeSelect.value = (snap.pageStyle && snap.pageStyle.fontSize) || '';
-  }
-
   enhanceBulletLists();
   wireAddBulletButtons();
   historySuspended = false;
@@ -122,17 +215,298 @@ function applySnapshot(snap) {
 }
 
 function undo() {
-  if (historyIndex <= 0) return;
+  const hist = getHistory();
+  if (hist.index <= 0) return;
   clearTimeout(historyDebounceTimer);
-  historyIndex -= 1;
-  applySnapshot(historyStack[historyIndex]);
+  hist.index -= 1;
+  applySnapshot(hist.stack[hist.index]);
 }
 
 function redo() {
-  if (historyIndex >= historyStack.length - 1) return;
+  const hist = getHistory();
+  if (hist.index >= hist.stack.length - 1) return;
   clearTimeout(historyDebounceTimer);
-  historyIndex += 1;
-  applySnapshot(historyStack[historyIndex]);
+  hist.index += 1;
+  applySnapshot(hist.stack[hist.index]);
+}
+
+function resetHistoryForActive(baseline) {
+  const hist = getHistory();
+  hist.stack = [baseline || captureSnapshot()];
+  hist.index = 0;
+  updateHistoryButtons();
+}
+
+// ---------- Document picker / mode / add ----------
+
+function getCoverTemplateHtml() {
+  const tpl = document.getElementById('tplCover');
+  return tpl ? tpl.innerHTML.trim() : '';
+}
+
+function updateModeChrome() {
+  const isCover = docsState.mode === 'cover';
+  const selectPrompt = isCover ? 'Select Cover Letter' : 'Select Resume';
+  document.getElementById('modeResume').classList.toggle('active', !isCover);
+  document.getElementById('modeCover').classList.toggle('active', isCover);
+  document.getElementById('modeResume').setAttribute('aria-selected', String(!isCover));
+  document.getElementById('modeCover').setAttribute('aria-selected', String(isCover));
+  const select = document.getElementById('docSelect');
+  const face = document.getElementById('docSelectFace');
+  if (select) {
+    select.setAttribute('aria-label', selectPrompt);
+    select.title = selectPrompt;
+  }
+  if (face) face.textContent = selectPrompt;
+  document.getElementById('newDocBtn').textContent = isCover ? '＋ Add Cover Letter' : '＋ Add Resume';
+  document.getElementById('docName').placeholder = isCover ? 'Untitled cover letter' : 'Untitled resume';
+}
+
+function renderDocSelect() {
+  const select = document.getElementById('docSelect');
+  const nameInput = document.getElementById('docName');
+  if (!select) return;
+  select.innerHTML = '';
+
+  const selectPrompt = docsState.mode === 'cover' ? 'Select Cover Letter' : 'Select Resume';
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  placeholder.textContent = selectPrompt;
+  select.appendChild(placeholder);
+
+  getModeOrder().forEach((id) => {
+    const doc = docsState.docs[id];
+    if (!doc) return;
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = doc.name;
+    select.appendChild(opt);
+  });
+
+  select.value = '';
+  updateModeChrome();
+
+  if (nameInput) {
+    const active = getActiveDoc();
+    nameInput.disabled = false;
+    nameInput.value = active ? active.name : '';
+  }
+}
+
+function loadDocIntoDom(id) {
+  const doc = docsState.docs[id];
+  if (!doc) return;
+  historySuspended = true;
+  docsState.mode = doc.type;
+  docsState.activeByMode[doc.type] = id;
+  const page = document.getElementById('resume');
+  page.innerHTML = doc.html;
+  page.dataset.docType = doc.type;
+  applyPageStyle(doc.pageStyle || {});
+  enhanceBulletLists();
+  wireAddBulletButtons();
+  historySuspended = false;
+  renderDocSelect();
+  if (!historyById[id] || !historyById[id].stack.length) {
+    resetHistoryForActive(captureSnapshot());
+  } else {
+    updateHistoryButtons();
+  }
+  document.title = `${doc.name} — ${modeLabel(doc.type)}`;
+}
+
+function switchDoc(id) {
+  if (!id || id === getActiveId()) return;
+  saveActiveFromDom();
+  loadDocIntoDom(id);
+  saveDocs();
+}
+
+function ensureDocForMode(mode) {
+  let id = docsState.activeByMode[mode];
+  if (id && docsState.docs[id] && docsState.docs[id].type === mode) return id;
+
+  id = (docsState.order[mode] || []).find((d) => docsState.docs[d]);
+  if (id) {
+    docsState.activeByMode[mode] = id;
+    return id;
+  }
+
+  const isCover = mode === 'cover';
+  id = uid(isCover ? 'c' : 'r');
+  const doc = {
+    id,
+    name: isCover ? 'Cover Letter 1' : 'Resume 1',
+    type: mode,
+    html: isCover ? defaultCoverHtml : defaultResumeHtml,
+    pageStyle: {},
+  };
+  docsState.docs[id] = doc;
+  if (!docsState.order[mode]) docsState.order[mode] = [];
+  docsState.order[mode].push(id);
+  docsState.activeByMode[mode] = id;
+  historyById[id] = { stack: [], index: -1 };
+  return id;
+}
+
+function setMode(mode) {
+  if (mode !== 'resume' && mode !== 'cover') return;
+  if (mode === docsState.mode) return;
+  saveActiveFromDom();
+  docsState.mode = mode;
+  const id = ensureDocForMode(mode);
+  loadDocIntoDom(id);
+  saveDocs();
+}
+
+function renameActiveDoc(name) {
+  const doc = getActiveDoc();
+  if (!doc) return;
+  const fallback = docsState.mode === 'cover' ? 'Untitled cover letter' : 'Untitled resume';
+  doc.name = (name || '').trim() || fallback;
+  saveDocs();
+  renderDocSelect();
+  document.title = `${doc.name} — ${modeLabel(doc.type)}`;
+}
+
+function addDocument() {
+  const isCover = docsState.mode === 'cover';
+  const kind = isCover ? 'cover letter' : 'resume';
+  const suggested = isCover
+    ? `Cover Letter ${(docsState.order.cover.length || 0) + 1}`
+    : `Resume ${(docsState.order.resume.length || 0) + 1}`;
+
+  const entered = window.prompt(`Name for the new ${kind}?`, suggested);
+  if (entered === null) return; // cancelled
+
+  saveActiveFromDom();
+
+  const src = getActiveDoc();
+  const id = uid(isCover ? 'c' : 'r');
+  const html = src
+    ? src.html
+    : (isCover ? defaultCoverHtml : defaultResumeHtml);
+  const pageStyle = src
+    ? JSON.parse(JSON.stringify(src.pageStyle || {}))
+    : {};
+
+  const doc = {
+    id,
+    name: entered.trim() || suggested,
+    type: isCover ? 'cover' : 'resume',
+    html,
+    pageStyle,
+  };
+
+  docsState.docs[id] = doc;
+  docsState.order[doc.type].push(id);
+  docsState.activeByMode[doc.type] = id;
+  historyById[id] = { stack: [], index: -1 };
+  saveDocs();
+  loadDocIntoDom(id);
+  resetHistoryForActive();
+
+  const nameInput = document.getElementById('docName');
+  if (nameInput) {
+    nameInput.focus();
+    nameInput.select();
+  }
+}
+
+function migrateFromV2(v2) {
+  const orderResume = [];
+  const docs = {};
+  (v2.order || Object.keys(v2.docs || {})).forEach((id) => {
+    const d = v2.docs[id];
+    if (!d) return;
+    docs[id] = {
+      id,
+      name: d.name || 'Resume',
+      type: 'resume',
+      html: d.html,
+      pageStyle: d.pageStyle || {},
+    };
+    orderResume.push(id);
+  });
+  const active = v2.activeId && docs[v2.activeId] ? v2.activeId : orderResume[0];
+  return {
+    mode: 'resume',
+    activeByMode: { resume: active, cover: null },
+    order: { resume: orderResume, cover: [] },
+    docs,
+  };
+}
+
+function initDocsState() {
+  defaultResumeHtml = document.getElementById('resume').innerHTML;
+  defaultCoverHtml = getCoverTemplateHtml();
+
+  let data = loadDocsRaw();
+  if (!data) {
+    try {
+      const v2 = JSON.parse(localStorage.getItem(DOCS_KEY_V2) || 'null');
+      if (v2 && v2.docs) data = migrateFromV2(v2);
+    } catch (e) { /* ignore */ }
+  }
+
+  if (!data || !data.docs || !Object.keys(data.docs).length) {
+    try {
+      const legacyStore = JSON.parse(localStorage.getItem(LEGACY_STORE_KEY) || '{}');
+      Object.keys(legacyStore).forEach((editId) => {
+        const el = document.querySelector(`[data-edit-id="${cssEscape(editId)}"]`);
+        if (!el) return;
+        const match = legacyStore[editId].match(/^(<[^>]+>)([\s\S]*)<\/[\w-]+>\s*$/);
+        if (!match) return;
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = match[1];
+        const restored = wrapper.firstElementChild;
+        if (!restored) return;
+        restored.innerHTML = match[2];
+        el.replaceWith(restored);
+      });
+    } catch (e) { /* ignore */ }
+
+    let legacyStyle = {};
+    try {
+      legacyStyle = JSON.parse(localStorage.getItem(LEGACY_STYLE_KEY) || '{}');
+    } catch (e) { /* ignore */ }
+
+    const id = uid('r');
+    data = {
+      mode: 'resume',
+      activeByMode: { resume: id, cover: null },
+      order: { resume: [id], cover: [] },
+      docs: {
+        [id]: {
+          id,
+          name: 'Resume 1',
+          type: 'resume',
+          html: document.getElementById('resume').innerHTML,
+          pageStyle: legacyStyle,
+        },
+      },
+    };
+    localStorage.setItem(DOCS_KEY, JSON.stringify(data));
+  }
+
+  // Normalize shape for older/partial saves
+  if (!data.order || Array.isArray(data.order)) {
+    data = migrateFromV2(data);
+  }
+  if (!data.activeByMode) {
+    data.activeByMode = { resume: null, cover: null };
+  }
+  if (!data.mode) data.mode = 'resume';
+  Object.values(data.docs).forEach((d) => {
+    if (!d.type) d.type = 'resume';
+  });
+
+  docsState = data;
+  if (!docsState.activeByMode.resume && docsState.order.resume[0]) {
+    docsState.activeByMode.resume = docsState.order.resume[0];
+  }
 }
 
 // ---------- Bullet list helpers ----------
@@ -162,11 +536,8 @@ function placeCaretAtStart(el) {
   el.focus();
   const range = document.createRange();
   const sel = window.getSelection();
-  if (el.firstChild) {
-    range.setStart(el.firstChild, 0);
-  } else {
-    range.selectNodeContents(el);
-  }
+  if (el.firstChild) range.setStart(el.firstChild, 0);
+  else range.selectNodeContents(el);
   range.collapse(true);
   sel.removeAllRanges();
   sel.addRange(range);
@@ -184,7 +555,7 @@ function wireAddBulletButtons() {
       li.textContent = 'New bullet point';
       li.appendChild(makeDeleteButton());
       ul.appendChild(li);
-      persistElement(ul);
+      persistElement();
       placeCaretAtStart(li);
       pushHistory();
     });
@@ -192,9 +563,6 @@ function wireAddBulletButtons() {
 }
 
 // ---------- Formatting toolbar ----------
-
-let applyToWholePage = false;
-let savedSelection = null;
 
 function getResumeSelection() {
   const sel = window.getSelection();
@@ -242,29 +610,6 @@ function selectAllResumeText() {
 function clearWholePageMode() {
   applyToWholePage = false;
   document.getElementById('fmtSelectAll').classList.remove('active');
-}
-
-function loadPageStyle() {
-  try {
-    return JSON.parse(localStorage.getItem(PAGE_STYLE_KEY)) || {};
-  } catch (e) {
-    return {};
-  }
-}
-
-function savePageStyle(style) {
-  localStorage.setItem(PAGE_STYLE_KEY, JSON.stringify(style));
-}
-
-function applyPageStyle(style) {
-  const page = document.getElementById('resume');
-  if (style.fontFamily) page.style.fontFamily = style.fontFamily;
-  else page.style.fontFamily = '';
-  if (style.sizeScale) page.style.setProperty('--size-scale', String(style.sizeScale));
-  else page.style.removeProperty('--size-scale');
-  if (style.lineHeight) page.style.setProperty('--line-height', String(style.lineHeight));
-  else page.style.removeProperty('--line-height');
-  syncLineHeightDisplay(style.lineHeight || LINE_HEIGHT_DEFAULT);
 }
 
 function persistEditableAfterFormat() {
@@ -347,22 +692,10 @@ function applyFontSize(value) {
   wrapSelectionWithStyle({ fontSize: value });
 }
 
-const LINE_HEIGHT_DEFAULT = 1.45;
-const LINE_HEIGHT_STEP = 0.05;
-const LINE_HEIGHT_MIN = 1.0;
-const LINE_HEIGHT_MAX = 2.5;
-
-// Tracks the value shown in the stepper so +/- always increments from the
-// last applied value (not a hardcoded CSS default).
-let lineHeightState = LINE_HEIGHT_DEFAULT;
-
 function getEditableRoot(el) {
   if (!el) return null;
-  // Prefer the contenteditable host (the actual text box)
   const editable = el.closest('#resume [contenteditable="true"]');
   if (editable) {
-    // List items live inside a ul[data-edit-id]; keep the <li> as the target
-    // so line-height can be set per bullet, not the whole list.
     if (editable.closest('ul[data-editable-list], ol[data-editable-list]')) {
       return editable.closest('li') || editable;
     }
@@ -374,9 +707,7 @@ function getEditableRoot(el) {
 function clearDescendantLineHeights(root) {
   if (!root) return;
   root.querySelectorAll('*').forEach((child) => {
-    if (child.style && child.style.lineHeight) {
-      child.style.lineHeight = '';
-    }
+    if (child.style && child.style.lineHeight) child.style.lineHeight = '';
   });
 }
 
@@ -400,7 +731,6 @@ function getActiveEditable(restore = true) {
 
 function readLineHeightFromElement(el) {
   if (!el) return null;
-  // Prefer an explicit inline style (what we set) over computed px values
   if (el.style.lineHeight) {
     const n = parseFloat(el.style.lineHeight);
     if (!Number.isNaN(n)) return n;
@@ -433,9 +763,7 @@ function syncLineHeightDisplay(value) {
 
 function persistEditableRoot(el) {
   if (!el) return;
-  const root = el.closest('[data-edit-id]') || (el.dataset && el.dataset.editId ? el : null);
-  if (root) persistElement(root);
-  else persistAllEditable();
+  persistAllEditable();
 }
 
 function applyLineHeight(value) {
@@ -448,7 +776,6 @@ function applyLineHeight(value) {
     const page = document.getElementById('resume');
     const style = loadPageStyle();
     page.style.setProperty('--line-height', String(rounded));
-    // Clear per-field and nested overrides so the page setting actually shows
     document.querySelectorAll('#resume [style]').forEach((el) => {
       if (el.style.lineHeight) el.style.lineHeight = '';
     });
@@ -460,9 +787,6 @@ function applyLineHeight(value) {
     return;
   }
 
-  // Apply on the text-box root (e.g. the profile <p>), not an inner <span>.
-  // Nested spans with a larger line-height would otherwise keep the visual
-  // stuck at ~1.45 because browsers use the max line-height on a line.
   const el = getActiveEditable(true);
   if (el) {
     clearDescendantLineHeights(el);
@@ -473,7 +797,6 @@ function applyLineHeight(value) {
     return;
   }
 
-  // Fallback: whole page
   const page = document.getElementById('resume');
   const style = loadPageStyle();
   page.style.setProperty('--line-height', String(rounded));
@@ -485,8 +808,7 @@ function applyLineHeight(value) {
 
 function nudgeLineHeight(delta) {
   saveSelection();
-  const base = currentLineHeight();
-  applyLineHeight(base + delta);
+  applyLineHeight(currentLineHeight() + delta);
 }
 
 function updateFormatButtonStates() {
@@ -494,40 +816,52 @@ function updateFormatButtonStates() {
     document.getElementById('fmtBold').classList.toggle('active', document.queryCommandState('bold'));
     document.getElementById('fmtItalic').classList.toggle('active', document.queryCommandState('italic'));
     document.getElementById('fmtUnderline').classList.toggle('active', document.queryCommandState('underline'));
-  } catch (e) {
-    // ignore when selection is outside editable
-  }
+  } catch (e) { /* ignore */ }
 }
 
 // ---------- Wire everything up ----------
 
 document.addEventListener('DOMContentLoaded', () => {
   enhanceBulletLists();
-  restoreAll();
-  enhanceBulletLists();
-  wireAddBulletButtons();
+  initDocsState();
 
-  const pageStyle = loadPageStyle();
-  applyPageStyle(pageStyle);
-  if (pageStyle.fontFamily) {
-    const fontSelect = document.getElementById('fmtFont');
-    const match = Array.from(fontSelect.options).find((o) => o.value === pageStyle.fontFamily);
-    if (match) fontSelect.value = pageStyle.fontFamily;
+  const startId = getActiveId() || (docsState.order.resume && docsState.order.resume[0]);
+  if (startId) {
+    loadDocIntoDom(startId);
+  } else {
+    renderDocSelect();
   }
-  if (pageStyle.fontSize) {
-    document.getElementById('fmtSize').value = pageStyle.fontSize;
+  if (getActiveId() && (!historyById[getActiveId()] || historyById[getActiveId()].index < 0)) {
+    resetHistoryForActive();
   }
 
-  // Baseline snapshot so the first revert returns to the loaded state
-  pushHistory();
+  document.getElementById('modeResume').addEventListener('click', () => setMode('resume'));
+  document.getElementById('modeCover').addEventListener('click', () => setMode('cover'));
+
+  document.getElementById('docSelect').addEventListener('change', (e) => {
+    const id = e.target.value;
+    if (id) switchDoc(id);
+  });
+
+  const nameInput = document.getElementById('docName');
+  nameInput.addEventListener('change', () => renameActiveDoc(nameInput.value));
+  nameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      nameInput.blur();
+    }
+  });
+
+  document.getElementById('newDocBtn').addEventListener('click', addDocument);
 
   document.addEventListener('input', (e) => {
-    const el = e.target.closest('[data-edit-id]');
+    if (!e.target.closest || !e.target.closest('#resume')) return;
+    const el = e.target.closest('[data-edit-id], [contenteditable="true"]');
     if (!el) return;
     if (el.classList.contains('placeholder') && el.textContent.trim().length > 0) {
       el.classList.remove('placeholder');
     }
-    persistElement(el);
+    schedulePersistActive();
     pushHistoryDebounced();
   });
 
@@ -535,9 +869,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const del = e.target.closest('.del-bullet');
     if (!del) return;
     const li = del.closest('li');
-    const ul = li ? li.closest('[data-edit-id]') : null;
     if (li) li.remove();
-    if (ul) persistElement(ul);
+    persistAllEditable();
     pushHistory();
   });
 
@@ -547,6 +880,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (e) => {
     const mod = e.metaKey || e.ctrlKey;
     if (!mod) return;
+    if (e.target && e.target.id === 'docName') return;
     const key = e.key.toLowerCase();
     if (key === 'z' && !e.shiftKey) {
       e.preventDefault();
@@ -628,8 +962,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('resume').addEventListener('mousedown', () => {
     if (applyToWholePage) clearWholePageMode();
   });
-
-  document.title = 'Iris Chu - Resume';
 });
 
 // ---------- Fit to exactly one A4 page when printing ----------

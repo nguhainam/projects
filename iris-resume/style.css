@@ -39,7 +39,7 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 8px;
+  gap: 0;
   padding: 10px 16px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(6px);
@@ -55,18 +55,144 @@ html, body {
 }
 
 .toolbar-row-main {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.toolbar-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.doc-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.mode-toggle {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 3px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  gap: 2px;
+}
+
+.mode-btn {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.mode-btn:hover {
+  background: var(--paper-2);
+}
+
+.mode-btn.active {
+  background: var(--ink);
+  color: #fff;
+}
+
+.doc-select-wrap {
+  position: relative;
+  display: block;
+  height: 36px;
+  width: 100%;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231a1a1a' d='M1 1l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 12px center;
+  cursor: pointer;
+}
+
+.doc-select-face {
+  position: absolute;
+  left: 12px;
+  right: 36px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.doc-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+}
+
+.doc-select:focus {
+  outline: none;
+}
+
+.doc-select-wrap:focus-within {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.doc-name-input {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  padding: 2px 0 0;
+  margin: 0;
+  height: auto;
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+  color: var(--ink);
+  background: transparent;
+}
+
+.doc-name-input::placeholder {
+  color: #b0aaa0;
+  font-weight: 700;
+}
+
+.doc-name-input:focus {
+  outline: none;
+}
+
+.doc-name-input:disabled {
+  opacity: 0.45;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
   justify-content: flex-end;
-}
-
-.toolbar-row-format {
-  justify-content: flex-start;
-}
-
-.toolbar-hint {
-  margin-right: auto;
-  font-size: 12px;
-  color: var(--text-soft);
-  min-width: 0;
+  padding-top: 0;
 }
 
 .format-bar {
@@ -218,7 +344,7 @@ html, body {
 .page {
   position: relative;
   max-width: 720px;
-  margin: 128px auto 48px;
+  margin: 180px auto 48px;
   background: var(--paper);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border-soft);
@@ -274,6 +400,65 @@ html, body {
   margin: 0;
   font-size: calc(12px * var(--size-scale));
   color: var(--text-soft);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+/* ● (U+25CF) sits on the baseline better than • in most fonts;
+   flex + small size keeps it optically centered with the x-height. */
+.contact-sep {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0.45em;
+  font-size: 0.5em;
+  line-height: 1;
+  color: var(--ink);
+  transform: translateY(0.05em);
+}
+
+/* ---------- Cover letter ---------- */
+
+.letter-to {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  column-gap: 18px;
+  margin: 4px 0 28px;
+  font-size: calc(14px * var(--size-scale));
+}
+
+.letter-to-label {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.letter-to-name {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.letter-to-company {
+  text-align: right;
+  color: var(--text-soft);
+  font-style: italic;
+}
+
+.letter-body {
+  font-size: calc(14px * var(--size-scale));
+  line-height: var(--line-height, 1.55);
+  color: var(--text);
+}
+
+.letter-body p {
+  margin: 0 0 1.1em;
+}
+
+.letter-body p:last-child {
+  margin-bottom: 0;
 }
 
 /* ---------- Rules ---------- */

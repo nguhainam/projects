@@ -13,68 +13,83 @@
 
   <div class="toolbar no-print">
     <div class="toolbar-row toolbar-row-main">
-      <span class="toolbar-hint">Hi dear :) ✏️ Click text to edit · select text or use Select all, then format</span>
-      <button id="undoBtn" class="toolbar-btn ghost" title="Revert (⌘Z)" disabled>↺ Revert</button>
-      <button id="redoBtn" class="toolbar-btn ghost" title="Reapply (⌘⇧Z)" disabled>↻ Reapply</button>
-      <button id="downloadBtn" class="toolbar-btn">⬇ Download as PDF</button>
-    </div>
-    <div class="toolbar-row toolbar-row-format">
-      <div class="format-bar" aria-label="Text formatting">
-        <button type="button" class="fmt-btn" id="fmtBold" title="Bold" aria-label="Bold"><b>B</b></button>
-        <button type="button" class="fmt-btn" id="fmtItalic" title="Italic" aria-label="Italic"><i>I</i></button>
-        <button type="button" class="fmt-btn" id="fmtUnderline" title="Underline" aria-label="Underline"><u>U</u></button>
-        <span class="fmt-sep" aria-hidden="true"></span>
-        <label class="fmt-label" for="fmtFont">Font</label>
-        <select id="fmtFont" class="fmt-select" title="Font family">
-          <option value="EB Garamond, Georgia, serif">EB Garamond</option>
-          <option value="Lora, Georgia, serif">Lora</option>
-          <option value="'Source Serif 4', Georgia, serif">Source Serif</option>
-          <option value="'Libre Baskerville', Georgia, serif">Libre Baskerville</option>
-          <option value="Merriweather, Georgia, serif">Merriweather</option>
-          <option value="'PT Serif', Georgia, serif">PT Serif</option>
-          <option value="'Cormorant Garamond', Georgia, serif">Cormorant Garamond</option>
-          <option value="'Playfair Display', Georgia, serif">Playfair Display</option>
-          <option value="'Roboto Slab', Georgia, serif">Roboto Slab</option>
-          <option value="Georgia, 'Times New Roman', serif">Georgia</option>
-          <option value="'Times New Roman', Times, serif">Times New Roman</option>
-          <option value="Inter, Helvetica, sans-serif">Inter</option>
-          <option value="Roboto, Helvetica, sans-serif">Roboto</option>
-          <option value="'Open Sans', Helvetica, sans-serif">Open Sans</option>
-          <option value="Lato, Helvetica, sans-serif">Lato</option>
-          <option value="Montserrat, Helvetica, sans-serif">Montserrat</option>
-          <option value="Poppins, Helvetica, sans-serif">Poppins</option>
-          <option value="Nunito, Helvetica, sans-serif">Nunito</option>
-          <option value="'Source Sans 3', Helvetica, sans-serif">Source Sans</option>
-          <option value="Raleway, Helvetica, sans-serif">Raleway</option>
-          <option value="'Work Sans', Helvetica, sans-serif">Work Sans</option>
-          <option value="'Noto Sans', Helvetica, sans-serif">Noto Sans</option>
-          <option value="Oswald, Helvetica, sans-serif">Oswald</option>
-          <option value="Arial, Helvetica, sans-serif">Arial</option>
-          <option value="Helvetica, Arial, sans-serif">Helvetica</option>
-          <option value="Verdana, Geneva, sans-serif">Verdana</option>
-          <option value="'Courier New', Courier, monospace">Courier New</option>
-        </select>
-        <label class="fmt-label" for="fmtSize">Size</label>
-        <select id="fmtSize" class="fmt-select fmt-select-sm" title="Font size">
-          <option value="">Default</option>
-          <option value="10px">10</option>
-          <option value="11px">11</option>
-          <option value="12px">12</option>
-          <option value="13px">13</option>
-          <option value="14px">14</option>
-          <option value="16px">16</option>
-          <option value="18px">18</option>
-          <option value="20px">20</option>
-          <option value="24px">24</option>
-          <option value="28px">28</option>
-        </select>
-        <label class="fmt-label">Line</label>
-        <div class="fmt-stepper" title="Line height (spacing between lines)">
-          <button type="button" class="fmt-btn" id="fmtLineDown" aria-label="Decrease line height">−</button>
-          <span id="fmtLineValue" class="fmt-stepper-value">1.45</span>
-          <button type="button" class="fmt-btn" id="fmtLineUp" aria-label="Increase line height">+</button>
+      <div class="doc-picker">
+        <div class="mode-toggle" role="tablist" aria-label="Document type">
+          <button type="button" class="mode-btn active" data-mode="resume" id="modeResume" role="tab" aria-selected="true">Resume</button>
+          <button type="button" class="mode-btn" data-mode="cover" id="modeCover" role="tab" aria-selected="false">Cover Letter</button>
         </div>
-        <button type="button" class="fmt-btn fmt-select-all" id="fmtSelectAll" title="Select all text on the page">Select all</button>
+        <label class="doc-select-wrap">
+          <span class="doc-select-face" id="docSelectFace">Select Resume</span>
+          <select id="docSelect" class="doc-select" aria-label="Select Resume" title="Select Resume">
+            <option value="" selected disabled>Select Resume</option>
+          </select>
+        </label>
+        <input id="docName" class="doc-name-input" type="text" title="Rename" placeholder="Untitled" />
+      </div>
+      <div class="toolbar-right">
+        <div class="toolbar-actions">
+          <button id="newDocBtn" class="toolbar-btn ghost" title="Create a copy">＋ Add Resume</button>
+          <button id="undoBtn" class="toolbar-btn ghost" title="Revert (⌘Z)" disabled>↺ Revert</button>
+          <button id="redoBtn" class="toolbar-btn ghost" title="Reapply (⌘⇧Z)" disabled>↻ Reapply</button>
+          <button id="downloadBtn" class="toolbar-btn">⬇ Download as PDF</button>
+        </div>
+        <div class="format-bar" aria-label="Text formatting">
+          <button type="button" class="fmt-btn" id="fmtBold" title="Bold" aria-label="Bold"><b>B</b></button>
+          <button type="button" class="fmt-btn" id="fmtItalic" title="Italic" aria-label="Italic"><i>I</i></button>
+          <button type="button" class="fmt-btn" id="fmtUnderline" title="Underline" aria-label="Underline"><u>U</u></button>
+          <span class="fmt-sep" aria-hidden="true"></span>
+          <label class="fmt-label" for="fmtFont">Font</label>
+          <select id="fmtFont" class="fmt-select" title="Font family">
+            <option value="EB Garamond, Georgia, serif">EB Garamond</option>
+            <option value="Lora, Georgia, serif">Lora</option>
+            <option value="'Source Serif 4', Georgia, serif">Source Serif</option>
+            <option value="'Libre Baskerville', Georgia, serif">Libre Baskerville</option>
+            <option value="Merriweather, Georgia, serif">Merriweather</option>
+            <option value="'PT Serif', Georgia, serif">PT Serif</option>
+            <option value="'Cormorant Garamond', Georgia, serif">Cormorant Garamond</option>
+            <option value="'Playfair Display', Georgia, serif">Playfair Display</option>
+            <option value="'Roboto Slab', Georgia, serif">Roboto Slab</option>
+            <option value="Georgia, 'Times New Roman', serif">Georgia</option>
+            <option value="'Times New Roman', Times, serif">Times New Roman</option>
+            <option value="Inter, Helvetica, sans-serif">Inter</option>
+            <option value="Roboto, Helvetica, sans-serif">Roboto</option>
+            <option value="'Open Sans', Helvetica, sans-serif">Open Sans</option>
+            <option value="Lato, Helvetica, sans-serif">Lato</option>
+            <option value="Montserrat, Helvetica, sans-serif">Montserrat</option>
+            <option value="Poppins, Helvetica, sans-serif">Poppins</option>
+            <option value="Nunito, Helvetica, sans-serif">Nunito</option>
+            <option value="'Source Sans 3', Helvetica, sans-serif">Source Sans</option>
+            <option value="Raleway, Helvetica, sans-serif">Raleway</option>
+            <option value="'Work Sans', Helvetica, sans-serif">Work Sans</option>
+            <option value="'Noto Sans', Helvetica, sans-serif">Noto Sans</option>
+            <option value="Oswald, Helvetica, sans-serif">Oswald</option>
+            <option value="Arial, Helvetica, sans-serif">Arial</option>
+            <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+            <option value="Verdana, Geneva, sans-serif">Verdana</option>
+            <option value="'Courier New', Courier, monospace">Courier New</option>
+          </select>
+          <label class="fmt-label" for="fmtSize">Size</label>
+          <select id="fmtSize" class="fmt-select fmt-select-sm" title="Font size">
+            <option value="">Default</option>
+            <option value="10px">10</option>
+            <option value="11px">11</option>
+            <option value="12px">12</option>
+            <option value="13px">13</option>
+            <option value="14px">14</option>
+            <option value="16px">16</option>
+            <option value="18px">18</option>
+            <option value="20px">20</option>
+            <option value="24px">24</option>
+            <option value="28px">28</option>
+          </select>
+          <label class="fmt-label">Line</label>
+          <div class="fmt-stepper" title="Line height (spacing between lines)">
+            <button type="button" class="fmt-btn" id="fmtLineDown" aria-label="Decrease line height">−</button>
+            <span id="fmtLineValue" class="fmt-stepper-value">1.45</span>
+            <button type="button" class="fmt-btn" id="fmtLineUp" aria-label="Increase line height">+</button>
+          </div>
+          <button type="button" class="fmt-btn fmt-select-all" id="fmtSelectAll" title="Select all text on the page">Select all</button>
+        </div>
       </div>
     </div>
   </div>
@@ -89,7 +104,8 @@
       </h1>
       <p class="tagline" contenteditable="true" data-edit-id="tagline">Communications Specialist</p>
       <p class="contact-line">
-        <span contenteditable="true" data-edit-id="location">Los Angeles</span>,
+        <span contenteditable="true" data-edit-id="location">Los Angeles</span>
+        <span class="contact-sep" contenteditable="true" data-edit-id="contact-sep">●</span>
         <span contenteditable="true" data-edit-id="email">irisgchu@gmail.com</span>
       </p>
     </header>
@@ -220,6 +236,36 @@
     </section>
 
   </main>
+
+  <template id="tplCover">
+    <header class="header">
+      <h1>
+        <span contenteditable="true" data-edit-id="name">Iris Chu</span>
+        <span class="pronouns" contenteditable="true" data-edit-id="pronouns">(she/they)</span>
+      </h1>
+      <p class="tagline" contenteditable="true" data-edit-id="tagline">Communications Specialist</p>
+      <p class="contact-line">
+        <span contenteditable="true" data-edit-id="location">Los Angeles</span>
+        <span class="contact-sep" contenteditable="true" data-edit-id="contact-sep">●</span>
+        <span contenteditable="true" data-edit-id="email">irisgchu@gmail.com</span>
+      </p>
+    </header>
+
+    <hr class="rule" />
+
+    <div class="letter-to">
+      <span class="letter-to-label" contenteditable="true" data-edit-id="to-label">To</span>
+      <span class="letter-to-name" contenteditable="true" data-edit-id="to-name">Recipient Name</span>
+      <span class="letter-to-company" contenteditable="true" data-edit-id="to-company">Company Name</span>
+    </div>
+
+    <div class="letter-body">
+      <p contenteditable="true" data-edit-id="letter-salutation">Hi there,</p>
+      <p contenteditable="true" data-edit-id="letter-p1">I am writing to express my interest in joining your team. With a background in communications and multimedia content, I bring experience building engagement through thoughtful storytelling and collaboration.</p>
+      <p contenteditable="true" data-edit-id="letter-p2">I would welcome the chance to contribute my skills and learn from your organization. Please find my resume attached for your consideration.</p>
+      <p contenteditable="true" data-edit-id="letter-close">Thanks for considering!</p>
+    </div>
+  </template>
 
   <script src="script.js"></script>
 </body>
